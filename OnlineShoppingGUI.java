@@ -1,188 +1,334 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List; // Ensure you import this explicitly to avoid ambiguity
 
-public class OnlineShoppingGUI {
-    private JFrame frame;
+public class OnlineShoppingGUI extends JFrame {
     private CardLayout cardLayout;
     private JPanel mainPanel;
 
-    // Declare user list and product lists as instance variables
-    private List<User> users = new ArrayList<>();
-    private User loggedUser;
-    private List<Product> accessories;
-    private List<Product> electronics;
+    private ArrayList<User> users = new ArrayList<>();
+    private User loggedUser = null;
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new OnlineShoppingGUI().createAndShowGUI());
-    }
+    private ArrayList<Product> accessories = new ArrayList<>();
+    private ArrayList<Product> electronics = new ArrayList<>();
 
-    private void createAndShowGUI() {
-        frame = new JFrame("Online Shopping System");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 400);
+    // GUI Components for different panels
+    private JTextField regNameField, regEmailField;
+    private JPasswordField regPassField;
+
+    private JTextField loginEmailField;
+    private JPasswordField loginPassField;
+
+    private DefaultListModel<Product> productListModel;
+    private JList<Product> productList;
+    private JTextField quantityField;
+
+    private DefaultListModel<String> cartListModel;
+    private JList<String> cartList;
+
+    private JLabel totalLabel;
+
+    public OnlineShoppingGUI() {
+        setTitle("Online Shopping System");
+        setSize(600, 500);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        // Sample products
+        accessories.add(new Product("Keyboard", 1500, 15));
+        accessories.add(new Product("Mouse", 800, 20));
+
+        electronics.add(new Electronics("Laptop", 50000, 10, 12));
+        electronics.add(new Electronics("Smartphone", 30000, 5, 24));
+        electronics.add(new Electronics("Smartwatch", 8000, 8, 12));
 
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // Initialize products lists
-        accessories = Arrays.asList(
-                new Product("Keyboard", 1500, "Accessories", 15),
-                new Product("Mouse", 800, "Accessories", 20));
-        electronics = Arrays.asList(
-                new Product("Laptop", 50000, "Electronics", 10),
-                new Product("Power Bank", 2500, "Electronics", 10),
-                new Product("Router", 3500, "Electronics", 12),
-                new Product("Smartphone", 30000, "Electronics", 5),
-                new Product("Smartwatch", 8000, "Electronics", 8));
+        mainPanel.add(getWelcomePanel(), "welcome");
+        mainPanel.add(getRegisterPanel(), "register");
+        mainPanel.add(getLoginPanel(), "login");
+        mainPanel.add(getShopPanel(), "shop");
+        mainPanel.add(getCartPanel(), "cart");
+        mainPanel.add(getCheckoutPanel(), "checkout");
 
-        mainPanel.add(loginPanel(), "Login");
-        mainPanel.add(registerPanel(), "Register");
-        mainPanel.add(shopPanel(), "Shop");
-
-        frame.add(mainPanel);
-        frame.setVisible(true);
-
-        cardLayout.show(mainPanel, "Login");
+        add(mainPanel);
+        cardLayout.show(mainPanel, "welcome");
     }
 
-    private JPanel loginPanel() {
-        JPanel panel = new JPanel(new GridLayout(6, 1)); // Fixed row count to accommodate all components
-        JTextField emailField = new JTextField();
-        JPasswordField passField = new JPasswordField();
+    private JPanel getWelcomePanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        JButton registerBtn = new JButton("Register");
         JButton loginBtn = new JButton("Login");
-        JButton toRegisterBtn = new JButton("Register");
 
-        panel.add(new JLabel("Email:"));
-        panel.add(emailField);
-        panel.add(new JLabel("Password:"));
-        panel.add(passField);
+        registerBtn.addActionListener(e -> cardLayout.show(mainPanel, "register"));
+        loginBtn.addActionListener(e -> cardLayout.show(mainPanel, "login"));
+
+        panel.add(registerBtn);
         panel.add(loginBtn);
-        panel.add(toRegisterBtn);
-
-        loginBtn.addActionListener(e -> {
-            String email = emailField.getText();
-            String pass = new String(passField.getPassword());
-            for (User u : users) {
-                if (u.login(email, pass)) {
-                    loggedUser = u;
-                    cardLayout.show(mainPanel, "Shop");
-                    return;
-                }
-            }
-            JOptionPane.showMessageDialog(frame, "Login failed!");
-        });
-
-        toRegisterBtn.addActionListener(e -> cardLayout.show(mainPanel, "Register"));
 
         return panel;
     }
 
-    private JPanel registerPanel() {
-        JPanel panel = new JPanel(new GridLayout(8, 1)); // Fixed rows count for all components
-        JTextField nameField = new JTextField();
-        JTextField emailField = new JTextField();
-        JPasswordField passField = new JPasswordField();
-        JButton regBtn = new JButton("Register");
-        JButton backBtn = new JButton("Back");
+    private JPanel getRegisterPanel() {
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
 
         panel.add(new JLabel("Name:"));
-        panel.add(nameField);
+        regNameField = new JTextField();
+        panel.add(regNameField);
+
         panel.add(new JLabel("Email:"));
-        panel.add(emailField);
+        regEmailField = new JTextField();
+        panel.add(regEmailField);
+
         panel.add(new JLabel("Password:"));
-        panel.add(passField);
-        panel.add(regBtn);
+        regPassField = new JPasswordField();
+        panel.add(regPassField);
+
+        JButton registerBtn = new JButton("Register");
+        JButton backBtn = new JButton("Back");
+
+        registerBtn.addActionListener(e -> registerUser());
+        backBtn.addActionListener(e -> cardLayout.show(mainPanel, "welcome"));
+
+        panel.add(registerBtn);
         panel.add(backBtn);
 
-        regBtn.addActionListener(e -> {
-            String name = nameField.getText();
-            String email = emailField.getText();
-            String pass = new String(passField.getPassword());
-            users.add(new User(name, email, pass));
-            JOptionPane.showMessageDialog(frame, "Registration Successful");
-            cardLayout.show(mainPanel, "Login");
-        });
+        return panel;
+    }
 
-        backBtn.addActionListener(e -> cardLayout.show(mainPanel, "Login"));
+    private JPanel getLoginPanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+
+        panel.add(new JLabel("Email:"));
+        loginEmailField = new JTextField();
+        panel.add(loginEmailField);
+
+        panel.add(new JLabel("Password:"));
+        loginPassField = new JPasswordField();
+        panel.add(loginPassField);
+
+        JButton loginBtn = new JButton("Login");
+        JButton backBtn = new JButton("Back");
+
+        loginBtn.addActionListener(e -> loginUser());
+        backBtn.addActionListener(e -> cardLayout.show(mainPanel, "welcome"));
+
+        panel.add(loginBtn);
+        panel.add(backBtn);
 
         return panel;
     }
 
-    private JPanel shopPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private JPanel getShopPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
 
-        JTextArea productsArea = new JTextArea();
-        productsArea.setEditable(false);
-        JScrollPane scroll = new JScrollPane(productsArea);
-        panel.add(scroll, BorderLayout.CENTER);
+        JPanel topPanel = new JPanel();
+        JButton accessoriesBtn = new JButton("Accessories");
+        JButton electronicsBtn = new JButton("Electronics");
+        JButton viewCartBtn = new JButton("View Cart");
+        JButton logoutBtn = new JButton("Logout");
+
+        accessoriesBtn.addActionListener(e -> loadProducts(accessories));
+        electronicsBtn.addActionListener(e -> loadProducts(electronics));
+        viewCartBtn.addActionListener(e -> {
+            updateCartList();
+            cardLayout.show(mainPanel, "cart");
+        });
+        logoutBtn.addActionListener(e -> {
+            loggedUser = null;
+            cardLayout.show(mainPanel, "welcome");
+        });
+
+        topPanel.add(accessoriesBtn);
+        topPanel.add(electronicsBtn);
+        topPanel.add(viewCartBtn);
+        topPanel.add(logoutBtn);
+
+        productListModel = new DefaultListModel<>();
+        productList = new JList<>(productListModel);
+        productList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(productList);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(new JLabel("Quantity:"));
+        quantityField = new JTextField(5);
+        bottomPanel.add(quantityField);
 
         JButton addToCartBtn = new JButton("Add to Cart");
-        JButton viewCartBtn = new JButton("View Cart");
-        JButton checkoutBtn = new JButton("Checkout");
+        addToCartBtn.addActionListener(e -> addToCart());
+        bottomPanel.add(addToCartBtn);
 
-        JPanel btnPanel = new JPanel();
-        btnPanel.add(addToCartBtn);
-        btnPanel.add(viewCartBtn);
-        btnPanel.add(checkoutBtn);
-        panel.add(btnPanel, BorderLayout.SOUTH);
-
-        StringBuilder sb = new StringBuilder();
-        int index = 1;
-        for (Product p : accessories) {
-            sb.append(index++).append(": ").append(p.name).append(" - Tk ").append(p.price)
-                    .append(" | Stock: ").append(p.stock).append("\n");
-        }
-        for (Product p : electronics) {
-            sb.append(index++).append(": ").append(p.name).append(" - Tk ").append(p.price)
-                    .append(" | Stock: ").append(p.stock).append("\n");
-        }
-        productsArea.setText(sb.toString());
-
-        addToCartBtn.addActionListener(e -> {
-            String input = JOptionPane.showInputDialog(frame, "Enter product number:");
-            try {
-                int choice = Integer.parseInt(input);
-                int qty = Integer.parseInt(JOptionPane.showInputDialog(frame, "Enter quantity:"));
-                List<Product> allProducts = new ArrayList<>();
-                allProducts.addAll(accessories);
-                allProducts.addAll(electronics);
-                if (choice >= 1 && choice <= allProducts.size()) {
-                    loggedUser.addToCart(allProducts.get(choice - 1), qty);
-                } else {
-                    JOptionPane.showMessageDialog(frame, "Invalid product number.");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Invalid input.");
-            }
-        });
-
-        viewCartBtn.addActionListener(e -> {
-            StringBuilder cartSummary = new StringBuilder();
-            List<Product> cart = loggedUser.cart;
-            List<Integer> qtys = loggedUser.cartQuantity;
-            for (int i = 0; i < cart.size(); i++) {
-                cartSummary.append(cart.get(i).name).append(" x ").append(qtys.get(i)).append(" = Tk ")
-                        .append(cart.get(i).price * qtys.get(i)).append("\n");
-            }
-            cartSummary.append("Total: Tk ").append(loggedUser.calculateTotal());
-            JOptionPane.showMessageDialog(frame, cartSummary.toString());
-        });
-
-        checkoutBtn.addActionListener(e -> {
-            Order order = new Order(loggedUser, loggedUser.cart, loggedUser.cartQuantity);
-            order.placeOrder();
-            new Payment(order).processPayment();
-            order.trackOrder();
-            JOptionPane.showMessageDialog(frame, "Order placed successfully!");
-            System.exit(0);
-        });
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
 
         return panel;
     }
-}
 
-// Make sure you have these classes defined elsewhere in your project:
-// Product, User, Order, Payment
+    private JPanel getCartPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+
+        cartListModel = new DefaultListModel<>();
+        cartList = new JList<>(cartListModel);
+        JScrollPane scrollPane = new JScrollPane(cartList);
+
+        totalLabel = new JLabel("Total: Tk 0.0");
+        JButton checkoutBtn = new JButton("Checkout");
+        JButton backBtn = new JButton("Back to Shop");
+
+        checkoutBtn.addActionListener(e -> cardLayout.show(mainPanel, "checkout"));
+        backBtn.addActionListener(e -> cardLayout.show(mainPanel, "shop"));
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(totalLabel);
+        bottomPanel.add(checkoutBtn);
+        bottomPanel.add(backBtn);
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel getCheckoutPanel() {
+        JPanel panel = new JPanel(new GridLayout(5, 1, 10, 10));
+
+        panel.add(new JLabel("Select Payment Method:"));
+
+        JButton bkashBtn = new JButton("bKash");
+        JButton nagadBtn = new JButton("Nagad");
+        JButton codBtn = new JButton("Cash on Delivery");
+        JButton backBtn = new JButton("Back to Cart");
+
+        bkashBtn.addActionListener(e -> processPayment("bkash"));
+        nagadBtn.addActionListener(e -> processPayment("nagad"));
+        codBtn.addActionListener(e -> processPayment("cod"));
+        backBtn.addActionListener(e -> cardLayout.show(mainPanel, "cart"));
+
+        panel.add(bkashBtn);
+        panel.add(nagadBtn);
+        panel.add(codBtn);
+        panel.add(backBtn);
+
+        return panel;
+    }
+
+    // --- Helper Methods ---
+
+    private void registerUser() {
+        String name = regNameField.getText().trim();
+        String email = regEmailField.getText().trim();
+        String password = new String(regPassField.getPassword());
+
+        if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please fill all fields.");
+            return;
+        }
+
+        // Check if email already exists
+        for (User u : users) {
+            if (u.getEmail().equalsIgnoreCase(email)) {
+                JOptionPane.showMessageDialog(this, "Email already registered.");
+                return;
+            }
+        }
+
+        users.add(new User(name, email, password));
+        JOptionPane.showMessageDialog(this, "Registration successful! Please login.");
+        cardLayout.show(mainPanel, "login");
+    }
+
+    private void loginUser() {
+        String email = loginEmailField.getText().trim();
+        String password = new String(loginPassField.getPassword());
+
+        for (User u : users) {
+            if (u.login(email, password)) {
+                loggedUser = u;
+                JOptionPane.showMessageDialog(this, "Welcome, " + loggedUser.getEmail() + "!");
+                loadProducts(accessories); // default load accessories
+                cardLayout.show(mainPanel, "shop");
+                return;
+            }
+        }
+        JOptionPane.showMessageDialog(this, "Invalid email or password.");
+    }
+
+    private void loadProducts(ArrayList<Product> products) {
+        productListModel.clear();
+        for (Product p : products) {
+            productListModel.addElement(p);
+        }
+    }
+
+    private void addToCart() {
+        Product selected = productList.getSelectedValue();
+        if (selected == null) {
+            JOptionPane.showMessageDialog(this, "Select a product first.");
+            return;
+        }
+        int quantity;
+        try {
+            quantity = Integer.parseInt(quantityField.getText());
+            if (quantity <= 0)
+                throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Enter a valid quantity.");
+            return;
+        }
+
+        if (selected.getStock() < quantity) {
+            JOptionPane.showMessageDialog(this, "Insufficient stock.");
+            return;
+        }
+
+        // Reduce stock
+        selected.setStock(selected.getStock() - quantity);
+        loggedUser.addToCart(selected, quantity);
+
+        JOptionPane.showMessageDialog(this, "Added to cart.");
+        quantityField.setText("");
+        loadProducts(accessories.contains(selected) ? accessories : electronics);
+    }
+
+    private void updateCartList() {
+        cartListModel.clear();
+        double total = 0;
+        for (int i = 0; i < loggedUser.cart.size(); i++) {
+            Product p = loggedUser.cart.get(i);
+            int qty = loggedUser.cartQuantity.get(i);
+            cartListModel.addElement(p.getName() + " x " + qty + " = Tk " + (p.getPrice() * qty));
+            total += p.getPrice() * qty;
+        }
+        totalLabel.setText("Total: Tk " + total);
+    }
+
+    private void processPayment(String method) {
+        Order order = new Order(loggedUser, loggedUser.cart, loggedUser.cartQuantity);
+        Payment payment;
+
+        switch (method) {
+            case "bkash" -> payment = new BkashPayment(order);
+            case "nagad" -> payment = new NagadPayment(order);
+            case "cod" -> payment = new CashOnDeliveryPayment(order);
+            default -> {
+                JOptionPane.showMessageDialog(this, "Invalid payment method.");
+                return;
+            }
+        }
+
+        payment.processPayment();
+        JOptionPane.showMessageDialog(this, "Payment status: " + order.getStatus() + "\nThank you for shopping!");
+        loggedUser.cart.clear();
+        loggedUser.cartQuantity.clear();
+        cardLayout.show(mainPanel, "welcome");
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new OnlineShoppingGUI().setVisible(true);
+        });
+    }
+}

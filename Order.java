@@ -1,32 +1,23 @@
-import java.util.*;
+import java.util.List;
 
 public class Order {
-    User user;
-    List<Product> products;
-    List<Integer> quantities;
+    private User user;
+    private List<Product> products;
+    private List<Integer> quantities;
+    private String status;
 
     public Order(User user, List<Product> products, List<Integer> quantities) {
         this.user = user;
-        this.products = new ArrayList<>(products);
-        this.quantities = new ArrayList<>(quantities);
+        this.products = products;
+        this.quantities = quantities;
+        this.status = "Pending";
     }
 
-    public void placeOrder() {
-        // Save order or do something
+    public String getStatus() {
+        return status;
     }
 
-    public void trackOrder() {
-        System.out.println("Tracking Order: Your order is being processed.");
-    }
-
-    // Add this method
-    public double getTotalAmount() {
-        double total = 0.0;
-        for (int i = 0; i < products.size(); i++) {
-            Product product = products.get(i);
-            int quantity = quantities.get(i);
-            total += product.getPrice() * quantity;
-        }
-        return total;
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
